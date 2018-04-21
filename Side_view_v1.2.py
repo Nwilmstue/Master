@@ -272,11 +272,10 @@ def main():
 
             if itime == 0 and i == 0:
                 ns.phend = ns.ph
-                ns.phtotal = ns.phend + ns.ph - 1
             else:
                 ns.phend = function.max(ns.phend,ns.ph)
 
-            ns.phtotal[:] = ns.phend + ns.ph - 1
+            ns.phtotal = ns.phend + ns.ph - 1
             if itime % 6 == 0:
                 allT.append([ns.T])
                 allphtotal.append([ns.phtotal])
