@@ -1,1 +1,8 @@
 *.png
+/1.Temperature_field/*
+/2. Figures/*
+/Auto/*
+/html/*
+/latex/*
+/old/*
+/__pycache__/*
