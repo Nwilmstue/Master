@@ -14,9 +14,9 @@ import numpy, unittest, time, collections, itertools, functools, numbers, scipy,
 def main():
     # Create namespace and properties
     time1 = timeprint()
-    backup()
     ns = function.Namespace()
     prop = properties(printprop = True , extended = True , EXIT = False)
+    prop.backup()
     #config(verbose=2, nprocs=8)
 
     # Construct topology, geometry and basis
@@ -100,34 +100,34 @@ def main():
             ns.q = prop.power * function.exp( -((x0-prop.dx1/5 - prop.dx1/5*3/prop.maxiter *itime)**2)/(0.001**2) )
             loadEVAL2 = domainEVAL.boundary['top'].integrate(ns.eval_n('basis_n q'), geometry=ns.x, ischeme=prop.ischeme)
             loadTOTAL = loadEVAL1 + loadEVAL2
-
+            
             #Solve the equation
             lhs = A.solve((loadTOTAL) + B.matvec(lhs), constrain=consEVAL)
             ns.lhs = lhs
             ns.T = ns.basis.dot(ns.lhs)
-
             #Updating the solution
             ns.ph = 0.5 * (function.tanh(prop.S * 2 / (prop.Tl - prop.Ts) * ( ns.T - (prop.Ts + prop.Tl) / 2 )) + 1)
 
             if itime == 0 and i == 0:
                 ns.phend = ns.ph
             else:
-#                ns.phend = function.max(ns.phend,ns.ph)
-                ns.phend = function.add(ns.phend, ns.ph)
+                ns.phend = function.max(ns.phend,ns.ph)
+#                ns.phend = domain.elem_eval(function.max(ns.phend, ns.ph), ischeme='vertex1', asfunction=True)
 
             ns.phtotal = ns.phend + ns.ph - 1
             
             # Select pictures that needs to be printed
             if itime % 6 == 0:
                 allT.append([ns.T])
-                allphtotal.append([ns.ph])
-            
+                ns.phtotal = ns.phend + ns.ph - 1
+                allphtotal.append([ns.phtotal])
         if i == prop.breakvalue:
             break
-        time1.timeprint('Solved \t   ')
+        time1.timeprint('solved \t   ')
         if prop.figures:
             #figures(ns,prop,domain,[allT], ['Temperature'],[[200,2100]],  prop.dpi, i)
             figures(ns,prop,domain,[allT,allphtotal], ['Temperature','Phase'],[[200,2100] ,[ -1,1]],  prop.dpi, i)
+            ns.phend = domain.elem_eval(function.max(ns.phend, ns.ph), ischeme='vertex1', asfunction=True)
             #figures(ns,prop,domain,[allphtotal], ['Phase'],[[ -1,1]],  prop.dpi, i)
         time1.timeprint('Printed  \t ')
     print( 'Total time is'  ,round(time.time() - time1.tottime),'seconds')

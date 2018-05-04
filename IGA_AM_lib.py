@@ -56,6 +56,6 @@ class timeprint():
     
     ## Print used time until last timeprint   
     def timeprint(self,statement):
-        print(statement + '\t in' , round(time.time() - self.time1), 'second(s)'  )
+        print(statement + '\t in' , round(time.time() - self.time1,1), 'second(s)'  )
         self.time1 = time.time()
 
