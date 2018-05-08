@@ -6,40 +6,74 @@
 
 from nutils import plot, config, parallel  
 from prettytable import PrettyTable
-import numpy, datetime, os, shutil, matplotlib
+import numpy, datetime, os, shutil, matplotlib, parmap, tqdm
 
-## Plot figures in an efficient fashion
-#   @param         ns = The namespace (Namspace class)
-#   @param         prop = All the properties of the simulation (Object properties)
-#   @param         domain = The domain of the problem (topology class)
-#   @param         variable = All variables that needed to be plotted (list op namespace arrays)
-#   @param         name = names of plots (lists of strings)    
-#   @param         clim = colorbar limits (list of lists)  
-#   @param         dpi = Dots per inch in figure (integer)
-#   @param         ii = Layer that is evaluated (integer)   
-def figures(ns,prop,domain,variable,name,clim,dpi, ii):
-    assert len(variable) == len(name), 'The length of the variables and name do not match'
-    assert len(variable) == len(clim), 'The length of the variables and clim do not match'
+class figures():
+    ## Plot figures in an efficient fashion
+    #   @param         ns = The namespace (Namspace class)
+    #   @param         prop = All the properties of the simulation (Object properties)
+    #   @param         domain = The domain of the problem (topology class)
+    #   @param         variable = All variables that needed to be plotted (list op namespace arrays)
+    #   @param         name = names of plots (lists of strings)    
+    #   @param         clim = colorbar limits (list of lists)  
+    #   @param         dpi = Dots per inch in figure (integer)
+    #   @param         ii = Layer that is evaluated (integer)   
+    def __init__(self,ns,prop,domain,variable,name,clim,dpi, ii):
+        assert len(variable) == len(name), 'The length of the variables and name do not match'
+        assert len(variable) == len(clim), 'The length of the variables and clim do not match'
+        
+        self.variable = variable
+        self.name = name
+        self.ii = ii
+        self.dpi = dpi
+        self.prop = prop
+        self.clim = clim
+        self.lenk = len(variable)
+        self.leni = len(variable[0])
 
-    Dinput = [ns.x]
-    for k in range(0,len(variable)):
-        for i in range(0,len(variable[0])):
-            Dinput.append(variable[k][i][0])
-    Total_eval = domain.elem_eval(Dinput, ischeme='vertex1', separate=False)
+        Dinput = [ns.x]              
+        if prop.outputfile == 'vtk':
+            self.lenk = len(variable) - 1 
+            
+        for k in range(0,self.lenk):
+            for i in range(0,self.leni):
+                Dinput.append(variable[k][i][0])
+        
+                
+        if prop.outputfile == 'vtk':
+            self.Total_eval = domain.elem_eval(Dinput, ischeme='vtk', separate=True)
+        else:
+            self.Total_eval = domain.elem_eval(Dinput, ischeme='vertex1', separate=False)
+        
+        if prop.outputfile == 'vtk':
+            self.Total_eval = self.Total_eval +tuple(variable[1])
 
-    with config(verbose = 1, nprocs = 8):
-        for i in  parallel.pariter(range(0,len(variable[0])),8):
-            for k in range(0,len(variable)):
-                    with plot.PyPlot(name[k] + str(ii) + ' {}'.format(i)) as plt:
-                        plt.title(name[k] + ' at t={:5.1f}'.format(i*prop.timestep))
-                        plt.mesh(Total_eval[0], Total_eval[i+1+k*len(variable[0])])
-                        plt.colorbar(orientation = 'horizontal')
-                        plt.clim(clim[k][0],clim[k][1])
-                        plt.ylabel('Height in [m]')
-                        plt.xlabel('Width in [m]')
-                        #plt.figure(figsize=(prop.ex1*10,(prop.LayerResolution * prop.n + 1 )*10))
-                        plt.savefig(prop.dir + '2. Figures/' + name[k] + str(ii) + ' {}'.format(i),bbox_inches='tight', dpi = dpi)
+    def printfig(self,name):
+        assert name == 'vtk' or name == 'png', 'Not a correct type file, choose vtk or png '
+        with config(verbose = 2, nprocs = 8):
+            for i in  parallel.pariter(range(0,self.leni),8):
+                for k in range(0,self.lenk):
+                    if name == 'vtk' :
+                        self.plotvtk(k,i)
+                    else:
+                        self.plotpng(k,i)
 
+    def plotpng(self,k,i):
+        with plot.PyPlot(self.name[k] + str(self.ii) + ' {}'.format(i)) as plt:
+            plt.title(self.name[k] + ' at t={:5.1f}'.format(i*self.prop.timestep))
+            plt.mesh(self.Total_eval[0], self.Total_eval[i+1+k*self.leni])
+            plt.colorbar(orientation = 'horizontal')
+            plt.clim(self.clim[k][0],self.clim[k][1])
+            plt.ylabel('Height in [m]')
+            plt.xlabel('Width in [m]')
+            plt.savefig(self.prop.dir + '2. Figures/' + self.name[k] + str(self.ii) + ' {}'.format(i),bbox_inches='tight', dpi = self.prop.dpi)
+    
+    def plotvtk(self,k,i):
+       with plot.VTKFile(self.name[k] + str(self.ii)+ str(i) ) as vtk:
+            vtk.unstructuredgrid(self.Total_eval[0])
+            vtk.pointdataarray(self.name[k],self.Total_eval[i+1+k*self.leni])
+            
+        
 ## Properties that are used for the simulation
 class properties():
 
@@ -50,7 +84,8 @@ class properties():
         self.TOTAL.append(['dpi'                        ,150        ,'Resolution of the figures'                , 'Simulation options'])
         self.TOTAL.append(['adiabatic'                  ,True       ,'Apply adiabatic boundary conditions'      , 'Simulation options'])
         self.TOTAL.append(['Utest'                      ,False      ,'Run Unittest for lhs and constrains'      , 'Simulation options'])
-        self.TOTAL.append(['breakvalue'                 ,1000         ,'Until which layer is simulated'           , 'Simulation options'])
+        self.TOTAL.append(['breakvalue'                 ,1000       ,'Until which layer is simulated'           , 'Simulation options'])        
+        self.TOTAL.append(['outputfile'                ,'vtk'        ,'VTK plots or png'                         , 'Simulation options'])            #werkt nog niet
 #        self.TOTAL.append(['animation'                  ,False      ,'Build GIF animation'                      , 'Simulation options'])
 
         #FEM options
@@ -88,10 +123,10 @@ class properties():
 
         #Geometry and topology variables
         self.TOTAL.append(['LayerResolution'            ,2           ,'Amount of elements per layer'         , 'Geometry and topology'])
-        self.TOTAL.append(['n'                          ,40         ,'Amount of layers'                     , 'Geometry and topology'])
+        self.TOTAL.append(['n'                          ,10         ,'Amount of layers'                     , 'Geometry and topology'])
         self.TOTAL.append(['ex1'                        ,80         ,'Elements in x1 direction'             , 'Geometry and topology'])
         self.TOTAL.append(['dx1'                        ,0.02         ,'Distance in x1 direction in [m]'      , 'Geometry and topology'])
-        self.TOTAL.append(['dx2'                        ,0.02        ,'Distance in x2 direction in [m]'      , 'Geometry and topology'])
+        self.TOTAL.append(['dx2'                        ,0.005        ,'Distance in x2 direction in [m]'      , 'Geometry and topology'])
 
         # Create the variables
         for item in range(0,len(self.TOTAL)):

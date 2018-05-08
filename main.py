@@ -17,6 +17,7 @@ def main():
     ns = function.Namespace()
     prop = properties(printprop = True , extended = True , EXIT = False)
     prop.backup()
+
     #config(verbose=2, nprocs=8)
 
     # Construct topology, geometry and basis
@@ -26,7 +27,8 @@ def main():
     domain, geom = mesh.rectilinear([verts1, verts2])
     knotm        = BuildKnotMult(prop)
     ns.basis     = domain.basis(prop.basistype, degree=prop.degree, knotmultiplicities=[None,knotm])
-
+    print('The amount of DOFS are:', len(ns.basis))
+    
     #Define variables that need to be in the namespace
     ns.rho          = prop.rho                            # density
     ns.c            = prop.c                              # Specific heat capicity
@@ -62,7 +64,8 @@ def main():
         print('Layer', i+1, 'out of', prop.n , 'layers ','with',prop.maxiter,' timesteps.')
         allT =[]
         allph =[]
-        allphtotal = []        
+        allphtotal = []
+        allphtotaleval = []        
         
         domainEVAL   = domain[:,                          : (i + 1) * prop.LayerResolution]
         domainUPDATE = domain[:, i*prop.LayerResolution   : (i + 1) * prop.LayerResolution]
@@ -92,7 +95,8 @@ def main():
 
         B = (1 / prop.timestep) * capacitanceTOTAL
         A = B + conductivityTOTAL
-
+        
+        #print('Condition number: ',numpy.linalg.cond(A.export("dense")))
         time1.timeprint('Constructed')
         for itime in range(0,prop.maxiter):
 
@@ -105,30 +109,42 @@ def main():
             lhs = A.solve((loadTOTAL) + B.matvec(lhs), constrain=consEVAL)
             ns.lhs = lhs
             ns.T = ns.basis.dot(ns.lhs)
+            
             #Updating the solution
             ns.ph = 0.5 * (function.tanh(prop.S * 2 / (prop.Tl - prop.Ts) * ( ns.T - (prop.Ts + prop.Tl) / 2 )) + 1)
 
             if itime == 0 and i == 0:
                 ns.phend = ns.ph
-            else:
+                if prop.outputfile == 'vtk': 
+                    phend = domain.elem_eval(ns.ph, ischeme='vtk')
+#                phend = domain.elem_eval(function.max(ns.phend, ns.ph), ischeme='vertex1')
+#                print(phend)
+            else: 
                 ns.phend = function.max(ns.phend,ns.ph)
-#                ns.phend = domain.elem_eval(function.max(ns.phend, ns.ph), ischeme='vertex1', asfunction=True)
-
-            ns.phtotal = ns.phend + ns.ph - 1
-            
+                if prop.outputfile == 'vtk':
+                    phend = numpy.maximum(phend,domain.elem_eval(ns.ph, ischeme='vtk'))
+          
             # Select pictures that needs to be printed
             if itime % 6 == 0:
                 allT.append([ns.T])
                 ns.phtotal = ns.phend + ns.ph - 1
+                ns.phend = domain.elem_eval(function.max(ns.phend, ns.ph), ischeme='vertex1', asfunction=True)
                 allphtotal.append([ns.phtotal])
+                if prop.outputfile == 'vtk':
+                    allphtotaleval.append([phend])
+        
         if i == prop.breakvalue:
             break
         time1.timeprint('solved \t   ')
+        
         if prop.figures:
             #figures(ns,prop,domain,[allT], ['Temperature'],[[200,2100]],  prop.dpi, i)
-            figures(ns,prop,domain,[allT,allphtotal], ['Temperature','Phase'],[[200,2100] ,[ -1,1]],  prop.dpi, i)
-            ns.phend = domain.elem_eval(function.max(ns.phend, ns.ph), ischeme='vertex1', asfunction=True)
-            #figures(ns,prop,domain,[allphtotal], ['Phase'],[[ -1,1]],  prop.dpi, i)
+            if prop.outputfile == 'vtk':
+                fig = figures(ns,prop,domain,[allT,allphtotaleval], ['Temperature','Phase'],[[200,2100] ,[ -1,1]],  prop.dpi, i)
+            else:
+                fig = figures(ns,prop,domain,[allT,allphtotal], ['Temperature','Phase'],[[200,2100] ,[ -1,1]],  prop.dpi, i)
+            fig.printfig(prop.outputfile)
+
         time1.timeprint('Printed  \t ')
     print( 'Total time is'  ,round(time.time() - time1.tottime),'seconds')
 
