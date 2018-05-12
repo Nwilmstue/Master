@@ -97,6 +97,7 @@ def main():
         A = B + conductivityTOTAL
         
         #print('Condition number: ',numpy.linalg.cond(A.export("dense")))
+        
         time1.timeprint('Constructed')
         for itime in range(0,prop.maxiter):
 
@@ -116,13 +117,12 @@ def main():
             if itime == 0 and i == 0:
                 ns.phend = ns.ph
                 if prop.outputfile == 'vtk': 
-                    phend = domain.elem_eval(ns.ph, ischeme='vtk')
-#                phend = domain.elem_eval(function.max(ns.phend, ns.ph), ischeme='vertex1')
-#                print(phend)
+                    phend = domain.elem_eval(ns.ph, ischeme='vtk', separate=True)
+                    ns.phendeval = ns.ph
             else: 
                 ns.phend = function.max(ns.phend,ns.ph)
                 if prop.outputfile == 'vtk':
-                    phend = numpy.maximum(phend,domain.elem_eval(ns.ph, ischeme='vtk'))
+                    ns.phendeval = function.max(ns.phendeval,ns.ph)
           
             # Select pictures that needs to be printed
             if itime % 6 == 0:
@@ -131,7 +131,11 @@ def main():
                 ns.phend = domain.elem_eval(function.max(ns.phend, ns.ph), ischeme='vertex1', asfunction=True)
                 allphtotal.append([ns.phtotal])
                 if prop.outputfile == 'vtk':
-                    allphtotaleval.append([phend])
+                    phend = numpy.maximum(phend,domain.elem_eval(ns.phendeval, ischeme='vtk', separate=True))
+                    
+                    allphtotaleval.append(phend)
+        
+                    ns.phendeval = ns.ph
         
         if i == prop.breakvalue:
             break
@@ -146,6 +150,7 @@ def main():
             fig.printfig(prop.outputfile)
 
         time1.timeprint('Printed  \t ')
+    
     print( 'Total time is'  ,round(time.time() - time1.tottime),'seconds')
 
 if __name__ == '__main__':

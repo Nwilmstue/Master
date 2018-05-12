@@ -6,7 +6,7 @@
 
 from nutils import plot, config, parallel  
 from prettytable import PrettyTable
-import numpy, datetime, os, shutil, matplotlib, parmap, tqdm
+import numpy, datetime, os, shutil, matplotlib, parmap, tqdm, sys
 
 class figures():
     ## Plot figures in an efficient fashion
@@ -28,7 +28,7 @@ class figures():
         self.dpi = dpi
         self.prop = prop
         self.clim = clim
-        self.lenk = len(variable)
+        self.lenkoriginal = len(variable)
         self.leni = len(variable[0])
 
         Dinput = [ns.x]              
@@ -38,28 +38,28 @@ class figures():
         for k in range(0,self.lenk):
             for i in range(0,self.leni):
                 Dinput.append(variable[k][i][0])
-        
                 
         if prop.outputfile == 'vtk':
             self.Total_eval = domain.elem_eval(Dinput, ischeme='vtk', separate=True)
         else:
             self.Total_eval = domain.elem_eval(Dinput, ischeme='vertex1', separate=False)
-        
+
         if prop.outputfile == 'vtk':
             self.Total_eval = self.Total_eval +tuple(variable[1])
+
 
     def printfig(self,name):
         assert name == 'vtk' or name == 'png', 'Not a correct type file, choose vtk or png '
         with config(verbose = 2, nprocs = 8):
             for i in  parallel.pariter(range(0,self.leni),8):
-                for k in range(0,self.lenk):
+                for k in range(0,self.lenkoriginal):
                     if name == 'vtk' :
                         self.plotvtk(k,i)
                     else:
                         self.plotpng(k,i)
 
     def plotpng(self,k,i):
-        with plot.PyPlot(self.name[k] + str(self.ii) + ' {}'.format(i)) as plt:
+        with plot.PyPlot(self.name[k] + '{}'.format("%04d", self.ii) + '{}'.format("%04d", i)) as plt:
             plt.title(self.name[k] + ' at t={:5.1f}'.format(i*self.prop.timestep))
             plt.mesh(self.Total_eval[0], self.Total_eval[i+1+k*self.leni])
             plt.colorbar(orientation = 'horizontal')
@@ -69,7 +69,7 @@ class figures():
             plt.savefig(self.prop.dir + '2. Figures/' + self.name[k] + str(self.ii) + ' {}'.format(i),bbox_inches='tight', dpi = self.prop.dpi)
     
     def plotvtk(self,k,i):
-       with plot.VTKFile(self.name[k] + str(self.ii)+ str(i) ) as vtk:
+       with plot.VTKFile(self.name[k] + '{}'.format("%04d", self.ii) + '{}'.format("%04d", i) ) as vtk:
             vtk.unstructuredgrid(self.Total_eval[0])
             vtk.pointdataarray(self.name[k],self.Total_eval[i+1+k*self.leni])
             
@@ -105,7 +105,7 @@ class properties():
         self.TOTAL.append(['L'                          ,0          ,'Latent heat production '                           , 'Material'])
         self.TOTAL.append(['Tl'                         ,2000       ,'Temperature where mateirial is liquid '            , 'Material'])
         self.TOTAL.append(['Ts'                         ,1500       ,'Temperature where material is solid'               , 'Material'])
-        self.TOTAL.append(['S'                          ,8          ,'The strength of TANH curve for phase transistion'  , 'Material'])
+        self.TOTAL.append(['S'                          ,0.2          ,'The strength of TANH curve for phase transistion'  , 'Material'])
         self.TOTAL.append(['h'                          ,200        ,'Convective heat loss'                              , 'Material'])
         
         
@@ -122,11 +122,11 @@ class properties():
         self.TOTAL.append(['itime'                      ,0          ,'Intitial timeset     '                        , 'Initial conditions'])
 
         #Geometry and topology variables
-        self.TOTAL.append(['LayerResolution'            ,2           ,'Amount of elements per layer'         , 'Geometry and topology'])
-        self.TOTAL.append(['n'                          ,10         ,'Amount of layers'                     , 'Geometry and topology'])
+        self.TOTAL.append(['LayerResolution'            ,6           ,'Amount of elements per layer'         , 'Geometry and topology'])
+        self.TOTAL.append(['n'                          ,40         ,'Amount of layers'                     , 'Geometry and topology'])
         self.TOTAL.append(['ex1'                        ,80         ,'Elements in x1 direction'             , 'Geometry and topology'])
         self.TOTAL.append(['dx1'                        ,0.02         ,'Distance in x1 direction in [m]'      , 'Geometry and topology'])
-        self.TOTAL.append(['dx2'                        ,0.005        ,'Distance in x2 direction in [m]'      , 'Geometry and topology'])
+        self.TOTAL.append(['dx2'                        ,0.02        ,'Distance in x2 direction in [m]'      , 'Geometry and topology'])
 
         # Create the variables
         for item in range(0,len(self.TOTAL)):
