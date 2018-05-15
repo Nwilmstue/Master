@@ -69,7 +69,7 @@ class figures():
             plt.savefig(self.prop.dir + '2. Figures/' + self.name[k] + str(self.ii) + ' {}'.format(i),bbox_inches='tight', dpi = self.prop.dpi)
     
     def plotvtk(self,k,i):
-       with plot.VTKFile(self.name[k] + '{}'.format("%04d", self.ii) + '{}'.format("%04d", i) ) as vtk:
+       with plot.VTKFile(self.name[k] + '{:04d}'.format(self.ii) + '{:04d}'.format(i) ) as vtk:
             vtk.unstructuredgrid(self.Total_eval[0])
             vtk.pointdataarray(self.name[k],self.Total_eval[i+1+k*self.leni])
             
@@ -110,7 +110,7 @@ class properties():
         
         
         #Heat source (LASER) properties
-        self.TOTAL.append(['power'                      ,1.3e8        ,'Laser power'                         , 'Laser properties'])
+        self.TOTAL.append(['power'                      ,1.8e8        ,'Laser power'                         , 'Laser properties'])
         
         #Boundary conditions
         self.TOTAL.append(['Toutside'                   ,0          ,'Temperature at infinity'                      , 'Boundary conditions'])
@@ -122,11 +122,11 @@ class properties():
         self.TOTAL.append(['itime'                      ,0          ,'Intitial timeset     '                        , 'Initial conditions'])
 
         #Geometry and topology variables
-        self.TOTAL.append(['LayerResolution'            ,6           ,'Amount of elements per layer'         , 'Geometry and topology'])
-        self.TOTAL.append(['n'                          ,40         ,'Amount of layers'                     , 'Geometry and topology'])
+        self.TOTAL.append(['LayerResolution'            ,2           ,'Amount of elements per layer'         , 'Geometry and topology'])
+        self.TOTAL.append(['n'                          ,10         ,'Amount of layers'                     , 'Geometry and topology'])
         self.TOTAL.append(['ex1'                        ,80         ,'Elements in x1 direction'             , 'Geometry and topology'])
         self.TOTAL.append(['dx1'                        ,0.02         ,'Distance in x1 direction in [m]'      , 'Geometry and topology'])
-        self.TOTAL.append(['dx2'                        ,0.02        ,'Distance in x2 direction in [m]'      , 'Geometry and topology'])
+        self.TOTAL.append(['dx2'                        ,0.005        ,'Distance in x2 direction in [m]'      , 'Geometry and topology'])
 
         # Create the variables
         for item in range(0,len(self.TOTAL)):

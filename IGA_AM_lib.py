@@ -3,7 +3,7 @@
 ## @package IGA_AM_lib
 # This is the library for the IGA and AM combined functions. 
 
-from nutils import util#, config, cli, function, mesh, parallel,plot
+from nutils import util, plot,function, mesh #, config, cli, function, mesh, parallel,plot
 import numpy, unittest, time, collections, itertools, functools, numbers, scipy, sys,os,datetime, shutil, matplotlib
 
 ## Build a constrain vector
@@ -58,4 +58,37 @@ class timeprint():
     def timeprint(self,statement):
         print(statement + '\t in' , round(time.time() - self.time1,1), 'second(s)'  )
         self.time1 = time.time()
+        
+#class solidi():
+#    def __init__():
+#
+### mechanical solver
+#class mech():
+#    
+#    def __init__():
+#    
+#
+#    def update_domain(self):    
+#        
+#        
+#        
+#    def plot(domain,ns,levelset):
+#        maxrefine = 3
+#
+#        pointstest,valtest = domain.elem_eval([ns.x,levelset-0.5] , ischeme='bezier2', separate=True)
+##    with plot.PyPlot('test_if values are plottalbe', ndigits=1) as plt:
+##        plt.mesh(pointstest,valtest)
+##        plt.colorbar(orientation = 'horizontal')
+#        
+#        if numpy.max(valtest) > 0:
+#            domainnew = domain.trim(levelset-0.5, maxrefine = maxrefine)    
+#            points = domainnew.simplex.elem_eval(ns.x, ischeme='bezier2', separate=True)
+#            with plot.PyPlot('test_domaintrim', ndigits=1) as plt:
+#                plt.mesh(pointstest)
+#                plt.mesh(points, edgecolors='r' ,dpi = 600, mergetol=1e-6)
+#            with plot.PyPlot('Zoomed in', ndigits=1) as plt:
+#                plt.mesh(points, edgecolors='r' ,dpi = 600, mergetol=1e-6)
+
+  #      plt.segments( tpoints , color='g', lw=2 )
+
 

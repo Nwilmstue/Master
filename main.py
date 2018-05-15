@@ -112,7 +112,7 @@ def main():
             ns.T = ns.basis.dot(ns.lhs)
             
             #Updating the solution
-            ns.ph = 0.5 * (function.tanh(prop.S * 2 / (prop.Tl - prop.Ts) * ( ns.T - (prop.Ts + prop.Tl) / 2 )) + 1)
+#            ns.ph = 0.5 * (function.tanh(prop.S * 2 / (prop.Tl - prop.Ts) * ( ns.T - (prop.Ts + prop.Tl) / 2 )) + 1)
 
             if itime == 0 and i == 0:
                 ns.phend = ns.ph
@@ -123,18 +123,17 @@ def main():
                 ns.phend = function.max(ns.phend,ns.ph)
                 if prop.outputfile == 'vtk':
                     ns.phendeval = function.max(ns.phendeval,ns.ph)
-          
+            
             # Select pictures that needs to be printed
             if itime % 6 == 0:
                 allT.append([ns.T])
+#                TM(domain,ns,ns.phend)
                 ns.phtotal = ns.phend + ns.ph - 1
                 ns.phend = domain.elem_eval(function.max(ns.phend, ns.ph), ischeme='vertex1', asfunction=True)
                 allphtotal.append([ns.phtotal])
                 if prop.outputfile == 'vtk':
-                    phend = numpy.maximum(phend,domain.elem_eval(ns.phendeval, ischeme='vtk', separate=True))
-                    
-                    allphtotaleval.append(phend)
-        
+                    phend = numpy.maximum(phend,domain.elem_eval(ns.phendeval, ischeme='vtk', separate=True))                  
+                    allphtotaleval.append(phend)       
                     ns.phendeval = ns.ph
         
         if i == prop.breakvalue:
