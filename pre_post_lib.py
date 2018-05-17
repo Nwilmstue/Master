@@ -4,7 +4,7 @@
 # All the functions decicated to the pre and post processing of the simulation are packedf into this library
 
 
-from nutils import plot, config, parallel  
+from nutils import plot, config, parallel, log  
 from prettytable import PrettyTable
 import numpy, datetime, os, shutil, matplotlib, parmap, tqdm, sys
 
@@ -50,7 +50,7 @@ class figures():
 
     def printfig(self,name):
         assert name == 'vtk' or name == 'png', 'Not a correct type file, choose vtk or png '
-        with config(verbose = 2, nprocs = 8):
+        with config(verbose = 2, nprocs = 8, richoutput = True):
             for i in  parallel.pariter(range(0,self.leni),8):
                 for k in range(0,self.lenkoriginal):
                     if name == 'vtk' :
@@ -85,8 +85,8 @@ class properties():
         self.TOTAL.append(['adiabatic'                  ,True       ,'Apply adiabatic boundary conditions'      , 'Simulation options'])
         self.TOTAL.append(['Utest'                      ,False      ,'Run Unittest for lhs and constrains'      , 'Simulation options'])
         self.TOTAL.append(['breakvalue'                 ,1000       ,'Until which layer is simulated'           , 'Simulation options'])        
+        self.TOTAL.append(['Afig'                       ,5          ,'Amount of figures in a layer  '           , 'Simulation options'])        
         self.TOTAL.append(['outputfile'                ,'vtk'        ,'VTK plots or png'                         , 'Simulation options'])            #werkt nog niet
-#        self.TOTAL.append(['animation'                  ,False      ,'Build GIF animation'                      , 'Simulation options'])
 
         #FEM options
         self.TOTAL.append(['ischeme'                    ,'gauss4'   ,'The scheme used for numerical integration'      , 'FEM options'])
@@ -122,11 +122,11 @@ class properties():
         self.TOTAL.append(['itime'                      ,0          ,'Intitial timeset     '                        , 'Initial conditions'])
 
         #Geometry and topology variables
-        self.TOTAL.append(['LayerResolution'            ,2           ,'Amount of elements per layer'         , 'Geometry and topology'])
+        self.TOTAL.append(['LayerResolution'            ,2          ,'Amount of elements per layer'         , 'Geometry and topology'])
         self.TOTAL.append(['n'                          ,10         ,'Amount of layers'                     , 'Geometry and topology'])
-        self.TOTAL.append(['ex1'                        ,80         ,'Elements in x1 direction'             , 'Geometry and topology'])
-        self.TOTAL.append(['dx1'                        ,0.02         ,'Distance in x1 direction in [m]'      , 'Geometry and topology'])
-        self.TOTAL.append(['dx2'                        ,0.005        ,'Distance in x2 direction in [m]'      , 'Geometry and topology'])
+        self.TOTAL.append(['ex1'                        ,4          ,'Elements in x1 direction'             , 'Geometry and topology'])
+        self.TOTAL.append(['dx1'                        ,0.02       ,'Distance in x1 direction in [m]'      , 'Geometry and topology'])
+        self.TOTAL.append(['dx2'                        ,0.005      ,'Distance in x2 direction in [m]'      , 'Geometry and topology'])
 
         # Create the variables
         for item in range(0,len(self.TOTAL)):
@@ -148,15 +148,17 @@ class properties():
                 t.add_row(['      ','      ','      ','      '])
             t.add_row([sol[0], sol[1] ,sol[2], sol[3]])
             typecheck = sol[3]
-        print(t)
+        log.user(t)
+
+#        log.Log.write(3 , t )
 
         if extended:
             t = PrettyTable(['What','Value','Explanation'])
             t.add_row(['Layerthickness', self.dx2/self.n ,'The thickness of the layer in [m]'])
-            print(t)
+            log.user(t)
 
         if EXIT:
-            print('Exitted the script in printproperties' )
+            log.info('Exitted the script in printproperties' )
             sys.exit()
             
     ## Create backup and new directories for figures
@@ -170,7 +172,6 @@ class properties():
             os.makedirs(self.dir)
             os.makedirs(self.dir + '2. Figures/')
         shutil.copy(srcfile1, self.dir)
-        shutil.copy(srcfile1, self.dir)
-        shutil.copy(srcfile1, self.dir)
-        print('Backup made')
-        
+        shutil.copy(srcfile2, self.dir)
+        shutil.copy(srcfile3, self.dir)
+        log.info('Backup made')
